@@ -58,7 +58,7 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.3/mapbox-gl-geocoder.min.js"></script>
 
   <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoicG9pc29ubWFwcyIsImEiOiJjbGRycnRxcGowbjZ1M29wOWhzdWF3bGNzIn0.cktV7JL0ukEkILsfauPa6A';
+    mapboxgl.accessToken ='pk.eyJ1IjoicG9pc29ubWFwcyIsImEiOiJjbGRycnRxcGowbjZ1M29wOWhzdWF3bGNzIn0.cktV7JL0ukEkILsfauPa6A';
 
     var trees = [
       {
@@ -108,51 +108,79 @@
       alternatives: true // Enable alternative routes
     });
 
+    directions.on('reroute', function() {
+      // The user has deviated from the initial route
+      console.log('Rerouting...');
+    });
+
+    map.addControl(directions, 'top-left');
+
     // Initialize SpeechSynthesisUtterance object
     var speechUtterance = new SpeechSynthesisUtterance();
     speechUtterance.lang = 'en-US'; // Set language for speech synthesis
 
-    function speakCurrentStep() {
-      var currentLegIndex = directions.getLegIndex();
-      var currentStepIndex = directions.getStepIndex();
-      var currentRoute = directions.getRoutes()[0];
+    directions.on('route', function(e) {
+      if (e.route && e.route[0] && e.route[0].legs && e.route[0].legs.length > 0) {
+        var steps = e.route[0].legs[0].steps;
+        var currentStepIndex = 0;
 
-      if (currentLegIndex < currentRoute.legs.length) {
-        var currentLeg = currentRoute.legs[currentLegIndex];
-        var steps = currentLeg.steps;
+        directions.on('routeStep', function(e) {
+          currentStepIndex = e.stepIndex;
+          speakCurrentStep();
+        });
+        <!-- Your HTML and CSS code remains unchanged -->
 
-        if (currentStepIndex < steps.length) {
-          var currentStep = steps[currentStepIndex];
-          var currentInstruction = currentStep.maneuver.instruction;
-          var currentDistance = currentStep.distance;
+<!-- Your HTML and CSS code remains unchanged -->
 
-          // Convert distance to kilometers and round to two decimal places
-          var distanceInKilometers = (currentDistance / 1000).toFixed(2);
+<!-- The following JavaScript code has been updated -->
 
-          // Combine instruction and distance into a single text
-          var text = currentInstruction + ' (' + distanceInKilometers + ' kilometers)';
+<script>
+  // ... (existing code)
 
-          // Use SpeechSynthesis API to speak the text
-          speechUtterance.text = text;
-          speechSynthesis.speak(speechUtterance);
-        }
+  function speakCurrentStep() {
+    var currentLegIndex = directions.getLegIndex();
+    var currentStepIndex = directions.getStepIndex();
+    var currentRoute = directions.getRoutes()[0];
+    
+    if (currentLegIndex < currentRoute.legs.length) {
+      var currentLeg = currentRoute.legs[currentLegIndex];
+      var steps = currentLeg.steps;
+      
+      if (currentStepIndex < steps.length) {
+        var currentStep = steps[currentStepIndex];
+        var currentInstruction = currentStep.maneuver.instruction;
+        var currentDistance = currentStep.distance;
+  
+        // Convert distance to kilometers and round to two decimal places
+        var distanceInKilometers = (currentDistance / 1000).toFixed(2);
+  
+        // Combine instruction and distance into a single text
+        var text = currentInstruction + ' (' + distanceInKilometers + ' kilometers)';
+  
+        // Use SpeechSynthesis API to speak the text
+        var speechUtterance = new SpeechSynthesisUtterance(text);
+        speechUtterance.lang = 'en-US';
+        speechUtterance.rate = 1.2;
+        speechSynthesis.speak(speechUtterance);
       }
     }
+  }
 
-    directions.on('route', function (e) {
-      if (e.route && e.route[0] && e.route[0].legs && e.route[0].legs.length > 0) {
-        speakCurrentStep(); // Speak the first step immediately when the route is ready
-      }
-    });
+  directions.on('route', function (e) {
+    if (e.route && e.route[0] && e.route[0].legs && e.route[0].legs.length > 0) {
+      speakCurrentStep(); // Speak the first step immediately when the route is ready
+    }
+  });
 
-    directions.on('routeStep', function (e) {
-      speakCurrentStep(); // Speak the next step when a route step is triggered
-    });
+  directions.on('routeStep', function (e) {
+    speakCurrentStep(); // Speak the next step when a route step is triggered
+  });
+
 
     var treeMarkers = [];
 
     function addTreesMarkers() {
-      trees.forEach(function (tree) {
+      trees.forEach(function(tree) {
         var el = document.createElement('div');
         el.className = 'marker';
 
@@ -164,14 +192,14 @@
       });
 
       if (treesCheckbox.checked) {
-        treeMarkers.forEach(function (marker) {
+        treeMarkers.forEach(function(marker) {
           marker.addTo(map);
         });
       }
     }
 
     function removeTreesMarkers() {
-      treeMarkers.forEach(function (marker) {
+      treeMarkers.forEach(function(marker) {
         marker.remove();
       });
       treeMarkers = [];
@@ -180,7 +208,7 @@
     var myTreeMarkers = [];
 
     function addMyTreesMarkers() {
-      mytrees.forEach(function (tree) {
+      mytrees.forEach(function(tree) {
         var el = document.createElement('div');
         el.className = 'marker';
 
@@ -192,14 +220,14 @@
       });
 
       if (mytreesCheckbox.checked) {
-        myTreeMarkers.forEach(function (marker) {
+        myTreeMarkers.forEach(function(marker) {
           marker.addTo(map);
         });
       }
     }
 
     function removeMyTreesMarkers() {
-      myTreeMarkers.forEach(function (marker) {
+      myTreeMarkers.forEach(function(marker) {
         marker.remove();
       });
       myTreeMarkers = [];
@@ -208,7 +236,7 @@
     var treesCheckbox = document.getElementById('trees-checkbox');
     var mytreesCheckbox = document.getElementById('mytrees-checkbox');
 
-    treesCheckbox.addEventListener('change', function () {
+    treesCheckbox.addEventListener('change', function() {
       if (treesCheckbox.checked) {
         addTreesMarkers();
       } else {
@@ -216,7 +244,7 @@
       }
     });
 
-    mytreesCheckbox.addEventListener('change', function () {
+    mytreesCheckbox.addEventListener('change', function() {
       if (mytreesCheckbox.checked) {
         addMyTreesMarkers();
       } else {
@@ -243,15 +271,15 @@
       })
     );
 
-    document.getElementById('zoom-in').addEventListener('click', function () {
+    document.getElementById('zoom-in').addEventListener('click', function() {
       map.zoomIn();
     });
 
-    document.getElementById('zoom-out').addEventListener('click', function () {
+    document.getElementById('zoom-out').addEventListener('click', function() {
       map.zoomOut();
     });
 
-    navigator.geolocation.getCurrentPosition(function (position) {
+    navigator.geolocation.getCurrentPosition(function(position) {
       var userLocation = [position.coords.longitude, position.coords.latitude];
 
       map.flyTo({
@@ -266,11 +294,18 @@
     map.addControl(new mapboxgl.FullscreenControl());
 
     // Map events
-    map.on('click', function (e) {
+    map.on('click', function(e) {
       var features = map.queryRenderedFeatures(e.point);
       console.log(features);
     });
 
+    // Speech Synthesis
+    function speakText(text) {
+      var speechUtterance = new SpeechSynthesisUtterance(text);
+      speechUtterance.lang = 'en-US'; // Set language for speech synthesis
+      speechUtterance.rate = 1.2; // Adjust the rate of speech as needed
+      speechSynthesis.speak(speechUtterance);
+    }
   </script>
 </body>
 </html>
