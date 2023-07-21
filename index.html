@@ -116,6 +116,7 @@
     map.addControl(directions, 'top-left');
 
     var currentStepIndex = 0; // Declare a variable to keep track of the current step index
+    var lastSpokenStepIndex = -1; // To avoid repeating instructions
 
     directions.on('route', function(e) {
       if (e.route && e.route[0] && e.route[0].legs && e.route[0].legs.length > 0) {
@@ -128,35 +129,46 @@
         });
 
         function speakCurrentStep() {
+          if (currentStepIndex === lastSpokenStepIndex) {
+            // Avoid repeating the same instruction
+            return;
+          }
+
+          lastSpokenStepIndex = currentStepIndex;
+
           var currentStep = steps[currentStepIndex];
           var currentInstruction = currentStep.maneuver.instruction;
           var currentDistance = currentStep.distance;
+          var nextStepIndex = currentStepIndex + 1;
+          var nextStep = steps[nextStepIndex];
+          var nextInstruction = nextStep ? nextStep.maneuver.instruction : null;
+          var currentStreet = currentStep.name || "Unknown Street";
 
           // Convert distance to kilometers and round to two decimal places
           var distanceInKilometers = (currentDistance / 1000).toFixed(2);
 
-          // Combine instruction and distance into a single text
-          var text = currentInstruction + ' (' + distanceInKilometers + ' kilometers)';
+          // Combine instruction, distance, and street into a single text
+          var text = currentInstruction + ' (' + distanceInKilometers + ' kilometers) on ' + currentStreet;
 
           // Use SpeechSynthesis API to speak the text
           speakText(text);
+
+          // Provide upcoming turn information if available
+          if (nextInstruction) {
+            var upcomingDistance = nextStep.distance;
+            var upcomingStreet = nextStep.name || "Unknown Street";
+            var upcomingDistanceInKilometers = (upcomingDistance / 1000).toFixed(2);
+            var upcomingText = 'In ' + upcomingDistanceInKilometers + ' kilometers, ' + nextInstruction + ' on ' + upcomingStreet;
+            setTimeout(function() {
+              speakText(upcomingText);
+            }, 3000); // Wait for 3 seconds before speaking the upcoming turn
+          }
         }
 
         // Start speaking the first step
         speakCurrentStep();
       }
     });
-
-    // Initialize SpeechSynthesisUtterance object
-    var speechUtterance = new SpeechSynthesisUtterance();
-    speechUtterance.lang = 'en-US'; // Set language for speech synthesis
-
-    function speakText(text) {
-      var speechUtterance = new SpeechSynthesisUtterance(text);
-      speechUtterance.lang = 'en-US'; // Set language for speech synthesis
-      speechUtterance.rate = 1.2; // Adjust the rate of speech as needed
-      speechSynthesis.speak(speechUtterance);
-    }
 
     var treeMarkers = [];
 
@@ -233,7 +245,7 @@
       }
     });
 
-    // Geocoder and additional controls...
+    // Geocoder
     var geocoder = new MapboxGeocoder({
       accessToken: mapboxgl.accessToken,
       mapboxgl: mapboxgl
@@ -287,6 +299,23 @@
       speechUtterance.rate = 1.2; // Adjust the rate of speech as needed
       speechSynthesis.speak(speechUtterance);
     }
+
+    // Allow users to pause and resume the voice navigation
+    var isPaused = false;
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'p' || event.key === 'P') {
+        if (isPaused) {
+          // Resume voice navigation
+          isPaused = false;
+          speakCurrentStep();
+        } else {
+          // Pause voice navigation
+          isPaused = true;
+          speechSynthesis.cancel(); // Stop speaking
+        }
+      }
+    });
   </script>
 </body>
 </html>
