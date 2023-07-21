@@ -58,7 +58,7 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.3/mapbox-gl-geocoder.min.js"></script>
 
   <script>
-    mapboxgl.accessToken ='pk.eyJ1IjoicG9pc29ubWFwcyIsImEiOiJjbGRycnRxcGowbjZ1M29wOWhzdWF3bGNzIn0.cktV7JL0ukEkILsfauPa6A';
+    mapboxgl.accessToken = 'pk.eyJ1IjoicG9pc29ubWFwcyIsImEiOiJjbGRycnRxcGowbjZ1M29wOWhzdWF3bGNzIn0.cktV7JL0ukEkILsfauPa6A';
 
     var trees = [
       {
@@ -115,60 +115,48 @@
 
     map.addControl(directions, 'top-left');
 
-    // Initialize SpeechSynthesisUtterance object
-    var speechUtterance = new SpeechSynthesisUtterance();
-    speechUtterance.lang = 'en-US'; // Set language for speech synthesis
+    var currentStepIndex = 0; // Declare a variable to keep track of the current step index
 
     directions.on('route', function(e) {
       if (e.route && e.route[0] && e.route[0].legs && e.route[0].legs.length > 0) {
         var steps = e.route[0].legs[0].steps;
-        var currentStepIndex = 0;
 
+        // Move the 'routeStep' event listener outside the 'route' event listener
         directions.on('routeStep', function(e) {
           currentStepIndex = e.stepIndex;
           speakCurrentStep();
         });
-  
 
-  function speakCurrentStep() {
-    var currentLegIndex = directions.getLegIndex();
-    var currentStepIndex = directions.getStepIndex();
-    var currentRoute = directions.getRoutes()[0];
-    
-    if (currentLegIndex < currentRoute.legs.length) {
-      var currentLeg = currentRoute.legs[currentLegIndex];
-      var steps = currentLeg.steps;
-      
-      if (currentStepIndex < steps.length) {
-        var currentStep = steps[currentStepIndex];
-        var currentInstruction = currentStep.maneuver.instruction;
-        var currentDistance = currentStep.distance;
-  
-        // Convert distance to kilometers and round to two decimal places
-        var distanceInKilometers = (currentDistance / 1000).toFixed(2);
-  
-        // Combine instruction and distance into a single text
-        var text = currentInstruction + ' (' + distanceInKilometers + ' kilometers)';
-  
-        // Use SpeechSynthesis API to speak the text
-        var speechUtterance = new SpeechSynthesisUtterance(text);
-        speechUtterance.lang = 'en-US';
-        speechUtterance.rate = 1.2;
-        speechSynthesis.speak(speechUtterance);
+        function speakCurrentStep() {
+          var currentStep = steps[currentStepIndex];
+          var currentInstruction = currentStep.maneuver.instruction;
+          var currentDistance = currentStep.distance;
+
+          // Convert distance to kilometers and round to two decimal places
+          var distanceInKilometers = (currentDistance / 1000).toFixed(2);
+
+          // Combine instruction and distance into a single text
+          var text = currentInstruction + ' (' + distanceInKilometers + ' kilometers)';
+
+          // Use SpeechSynthesis API to speak the text
+          speakText(text);
+        }
+
+        // Start speaking the first step
+        speakCurrentStep();
       }
+    });
+
+    // Initialize SpeechSynthesisUtterance object
+    var speechUtterance = new SpeechSynthesisUtterance();
+    speechUtterance.lang = 'en-US'; // Set language for speech synthesis
+
+    function speakText(text) {
+      var speechUtterance = new SpeechSynthesisUtterance(text);
+      speechUtterance.lang = 'en-US'; // Set language for speech synthesis
+      speechUtterance.rate = 1.2; // Adjust the rate of speech as needed
+      speechSynthesis.speak(speechUtterance);
     }
-  }
-
-  directions.on('route', function (e) {
-    if (e.route && e.route[0] && e.route[0].legs && e.route[0].legs.length > 0) {
-      speakCurrentStep(); // Speak the first step immediately when the route is ready
-    }
-  });
-
-  directions.on('routeStep', function (e) {
-    speakCurrentStep(); // Speak the next step when a route step is triggered
-  });
-
 
     var treeMarkers = [];
 
@@ -245,7 +233,7 @@
       }
     });
 
-    // Geocoder
+    // Geocoder and additional controls...
     var geocoder = new MapboxGeocoder({
       accessToken: mapboxgl.accessToken,
       mapboxgl: mapboxgl
